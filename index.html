@@ -5,12 +5,34 @@
 <style>
 @font-face{font-family: emoji; src: url(Twemoji.ttf)}
 @font-face{font-family:i;src:local(impact),url(//xem.github.io/geoquiz2/i.ttf)}
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+html, body { overflow: hidden }
 body { background: #ccc; }
 canvas { background: radial-gradient(circle at 400px 0px, #fff 50%,#ddd 80%); display: block; margin: calc(50vh - 300px) auto; cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; }
+#buttons { position: absolute; top: 0; width: 800px; text-align: center; margin: calc(50vh - 285px) calc(50vw - 400px); }
+button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bold 16px calibri; cursor: pointer; }
+.hidden { display: none }
+.active { background: #fff; }
 </style>
 </head>
 <body>
 <canvas id=c width=800 height=600></canvas>
+<br>
+<div id=buttons class=xhidden>
+<button id=line class=active>LINE</button>
+<button id=move>MOVE</button>
+<button id=del>DELETE</button>
+<button id=play>PLAY</button>
+<button id=save>SAVE</button>
+<button id=load>LOAD</button>
+<button id=editor class=hidden>RETURN TO EDITOR</button>
+</div>
 <script>
 
 // Helpers
@@ -25,7 +47,11 @@ easeInOutQuad = (x) => {
 }
 
 // Globals
-state = 0; // 0: title, 1: editor, 2: play
+state = 1; // 0: title, 1: editor, 2: play
+action = "line" // or move or delete
+mousedown = 0;
+currentline = { x: 0, y: 0, x2: 0, y2: 0 };
+lines = [];
 x = c.getContext("2d");
 x.fillStyle = "#000";
 offsets1 = [20,60,110,140,187,240,290,320,370,410,460,510,555,605,655,705,735];
@@ -40,7 +66,7 @@ amt2 = -450;
 mousex = 0;
 mousey = 0;
 
-// Game loop
+// Render / Game loop
 I = setInterval(()=>{
   c.width ^= 0;
   x.save();
@@ -97,7 +123,7 @@ I = setInterval(()=>{
       amt2+=2;
     }
   
-    if(amt2>2100){
+    if(amt2>2100 && !navigator.userAgent.includes("Firefox")){
       x.restore();
       for(i = 0; i < 90; i++){
         x.globalAlpha = ((100-(2200-amt2))/100/9/((100-i)/15));
@@ -107,20 +133,75 @@ I = setInterval(()=>{
     }
     if(amt2>2200){
       amt2 = 2200;
+      //clearInterval(I);
     }
   }
   
   else if(state == 1){
-    x.fillRect(mousex, mousey, 20,20);
+    x.fillRect(mousex, mousey, 5,5);
+    x.lineWidth = 5;
+    for(i of lines){
+      x.moveTo(i.x, i.y);
+      x.lineTo(i.x2, i.y2);
+    }
+    if(currentline.x2){
+      x.moveTo(currentline.x, currentline.y);
+      x.lineTo(currentline.x2, currentline.y2);
+    }
+    x.stroke();
   }
 
 }, 16)
 
 // Click
-c.onclick = () => {
-  if(state == 0) state = 1;
+onclick = (e) => {
+  if(state == 0 && e.target.id == "c"){
+    state = 1;
+    buttons.classList.remove("hidden");
+  }
   else if(state == 1){
-  
+    //console.log(e.target.id);
+    if(e.target.id == "line"){
+      action = "line";
+      line.classList.add("active");
+      move.classList.remove("active");
+      del.classList.remove("active");
+      play.classList.remove("active");
+    }
+    else if(e.target.id == "move"){
+      action = "move";
+      line.classList.remove("active");
+      move.classList.add("active");
+      del.classList.remove("active");
+      play.classList.remove("active");
+    }
+    else if(e.target.id == "del"){
+      action = "delete";
+      line.classList.remove("active");
+      move.classList.remove("active");
+      del.classList.add("active");
+      play.classList.remove("active");
+    }
+    else if(e.target.id == "play"){
+      action = "play";
+      line.classList.add("hidden");
+      move.classList.add("hidden");
+      del.classList.add("hidden");
+      play.classList.add("hidden");
+      save.classList.add("hidden");
+      load.classList.add("hidden");
+      editor.classList.remove("hidden");
+    }
+    else if(e.target.id == "editor"){
+      action = "editor";
+      line.classList.remove("hidden");
+      move.classList.remove("hidden");
+      del.classList.remove("hidden");
+      play.classList.remove("hidden");
+      save.classList.remove("hidden");
+      load.classList.remove("hidden");
+      editor.classList.add("hidden");
+    }
   }
 }
 
@@ -128,6 +209,27 @@ c.onclick = () => {
 c.onmousemove = e => {
   mousex = e.offsetX;
   mousey = e.offsetY;
+  if(mousedown){
+    currentline.x2 = mousex;
+    currentline.y2 = mousey;
+  }
 }
+
+// Mousedown / up
+c.onmousedown = e => {
+  mousedown = 1;
+  currentline.x = mousex;
+  currentline.y = mousey;
+}
+c.onmouseup = e => {
+  mousedown = 0;
+  console.log(currentline);
+  console.log((currentline.x + currentline.x2)/2);
+  console.log((currentline.y + currentline.y2)/2);
+  console.log(-Math.atan2(currentline.y2-currentline.y, currentline.x2-currentline.x));
+  lines.push(currentline);
+  currentline = {x: 0, y: 0 }
+}
+
 </script>
 </body>
