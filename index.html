@@ -467,13 +467,14 @@ var Circle = (center, radius, mass, friction, restitution) => RigidShape(center,
 // New rectangle
 var Rectangle = (center, width, height, mass, friction, restitution) => RigidShape(center, mass, friction, restitution, 1, Math.hypot(width, height)/2, width, height);
 
-Rectangle(Vec2(500, 155), 40, 5, 200, 1, 0);
+
+/*
 Rectangle(Vec2(500, 145), 20, 20, 100, 1, 0);
 
 r = Rectangle(Vec2(500, 200), 400, 2, 0, 0, 0);
 rotateShape(r, 2.8);
 r = Rectangle(Vec2(270, 250), 100, 2, 0, 0, 0);
-rotateShape(r, -2.8);
+rotateShape(r, -2.8);*/
 
 // Helpers
 lerp = (start, end, amt) => {
@@ -680,7 +681,6 @@ onclick = (e) => {
       play.classList.remove("active");
     }
     else if(e.target.id == "play"){
-      action = "play";
       state = 2;
       add_line.classList.add("hidden");
       del_line.classList.add("hidden");
@@ -689,6 +689,19 @@ onclick = (e) => {
       load.classList.add("hidden");
       editor.classList.remove("hidden");
       clear.classList.add("hidden");
+      objects = [];
+      Rectangle(Vec2(400, 300), 30, 30, 200, 1, 0);
+      for(i of lines){
+        r = Rectangle(
+          Vec2((i[0] + i[2]) / 2, (i[1] + i[3]) / 2), // center
+          distance(Vec2(i[0],i[1]), Vec2(i[2],i[3])), // w
+          5, // h
+          0, // mass
+          0, // friction 
+          0  // restitution
+        );
+        rotateShape(r, Math.atan2(i[3]-i[1], i[2]-i[0])); // angle
+      }
     }
     else if(e.target.id == "editor"){
       action = "editor";
@@ -734,10 +747,10 @@ c.onmouseup = e => {
   mousedown = 0;
   line[2] = mousex;
   line[3] = mousey;
-  console.log(line);
-  console.log((line[0] + line[2])/2);
-  console.log((line[1] + line[3])/2);
-  console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
+  //console.log(line);
+  //console.log((line[0] + line[2])/2);
+  //console.log((line[1] + line[3])/2);
+  //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
   if(line[0] != line[2] || line[1] != line[3]) {
     lines.push(line);
   }
