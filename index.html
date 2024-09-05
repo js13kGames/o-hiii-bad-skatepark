@@ -26,7 +26,7 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 <br>
 <div id=buttons class=xhidden>
 <button id=add_line class=active>ADD LINE</button>
-<button id=del_line>DELETE LINE</button>
+<button id=del_line>DELETE LAST LINE</button>
 <button id=play>PLAY</button>
 <button id=share>SHARE</button>
 <button id=load>LOAD</button>
@@ -489,7 +489,7 @@ easeInOutQuad = (x) => {
 
 // Globals
 state = 1; // 0: title, 1: editor, 2: play
-action = "line" // or move or delete
+action = "add" // or move or delete
 mousedown = 0;
 line = [0,0,0,0];
 lines = [];
@@ -586,6 +586,7 @@ I = setInterval(()=>{
       x.lineTo(i[2], i[3]);
     }
     if(line[2]){
+      x.strokeStyle = "#000";
       x.moveTo(line[0], line[1]);
       x.lineTo(line[2], line[3]);
     }
@@ -675,10 +676,11 @@ onclick = (e) => {
       play.classList.remove("active");
     }
     else if(e.target.id == "del_line"){
-      action = "delete";
-      add_line.classList.remove("active");
-      del_line.classList.add("active");
-      play.classList.remove("active");
+      //action = "delete";
+      //add_line.classList.remove("active");
+      //del_line.classList.add("active");
+      //play.classList.remove("active");
+      lines.pop();
     }
     else if(e.target.id == "play"){
       state = 2;
@@ -704,7 +706,7 @@ onclick = (e) => {
       }
     }
     else if(e.target.id == "editor"){
-      action = "editor";
+      //action = "editor";
       state = 1;
       add_line.classList.remove("hidden");
       del_line.classList.remove("hidden");
@@ -730,7 +732,7 @@ onclick = (e) => {
 c.onmousemove = e => {
   mousex = e.offsetX;
   mousey = e.offsetY;
-  if(mousedown){
+  if(action == "add" && state == 1 && mousedown){
     line[2] = mousex;
     line[3] = mousey;
   }
@@ -739,22 +741,26 @@ c.onmousemove = e => {
 // Mousedown / up
 c.onmousedown = e => {
   mousedown = 1;
-  line[0] = mousex;
-  line[1] = mousey;
-  console.log(line);
+  if(action == "add" && state == 1){
+    line[0] = mousex;
+    line[1] = mousey;
+    console.log(line);
+  }
 }
 c.onmouseup = e => {
   mousedown = 0;
-  line[2] = mousex;
-  line[3] = mousey;
-  //console.log(line);
-  //console.log((line[0] + line[2])/2);
-  //console.log((line[1] + line[3])/2);
-  //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
-  if(line[0] != line[2] || line[1] != line[3]) {
-    lines.push(line);
+  if(action == "add" && state == 1){
+    line[2] = mousex;
+    line[3] = mousey;
+    //console.log(line);
+    //console.log((line[0] + line[2])/2);
+    //console.log((line[1] + line[3])/2);
+    //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
+    if(line[0] != line[2] || line[1] != line[3]) {
+      lines.push(line);
+    }
+    line = [0,0,0,0];
   }
-  line = [0,0,0,0];
 }
 
 </script>
