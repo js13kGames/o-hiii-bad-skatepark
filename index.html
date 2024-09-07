@@ -19,6 +19,12 @@ canvas { background: radial-gradient(circle at 400px 0px, #fff 50%,#ddd 80%); di
 button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bold 16px calibri; cursor: pointer; }
 .hidden { display: none }
 .active { background: #fff; }
+#up, #left, #reset, #right, #down { background: transparent; border: none; font: 30px emoji; padding: 0; position: absolute; text-shadow: 0 0 2px #000; }
+#up { top: 480px; left: 715px }
+#left { top: 515px; left: 680px }
+#reset { top: 515px; left: 715px }
+#right { top: 515px; left: 750px }
+#down { top: 550px; left: 715px }
 </style>
 </head>
 <body>
@@ -32,6 +38,11 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 <button id=load>LOAD</button>
 <button id=clear>CLEAR</button>
 <button id=editor class=hidden>RETURN TO EDITOR</button>
+<button id=up>⬆️</button>
+<button id=left>⬅️</button>
+<button id=reset>⏺</button>
+<button id=right>➡️</button>
+<button id=down>⬇️</button>
 </div>
 <script>
 
@@ -506,6 +517,11 @@ Y = 200;
 amt2 = -450;
 mousex = 0;
 mousey = 0;
+editordx = 0;
+editordy = 0;
+playerdx = 0;
+playerdy = 0;
+editorpressed = null; 
 
 // Render / Game loop
 I = setInterval(()=>{
@@ -586,15 +602,34 @@ I = setInterval(()=>{
     x.lineWidth = 5;
     for(i of lines){
       x.strokeStyle = "#000";
-      x.moveTo(i[0], i[1]);
-      x.lineTo(i[2], i[3]);
+      x.moveTo(i[0]+editordx, i[1]+editordy);
+      x.lineTo(i[2]+editordx, i[3]+editordy);
     }
     if(line[2]){
       x.strokeStyle = "#000";
-      x.moveTo(line[0], line[1]);
-      x.lineTo(line[2], line[3]);
+      x.moveTo(line[0]+editordx, line[1]+editordy);
+      x.lineTo(line[2]+editordx, line[3]+editordy);
     }
     x.stroke();
+    
+    
+    // man
+    x.beginPath();
+    x.font = "40px emoji";
+    x.fillText("🕺",400-20+editordx,300-8+editordy);
+    x.fillStyle = "#a01";
+    x.fillRect(400-25+editordx, 300-5+editordy, 50, 5);
+    x.fillStyle = "#38c";
+    x.arc(400-15+editordx,300+3+editordy,5,0,7);
+    x.arc(400+15+editordx,300+3+editordy,5,0,7);
+    x.fill();
+    x.closePath();
+    
+    if(editorpressed == "up"){ editordy-=3; }
+    else if(editorpressed == "left"){ editordx-=3; }
+    else if(editorpressed == "reset"){ editordx = editordy = 0; }
+    else if(editorpressed == "right"){ editordx+=3; }
+    else if(editorpressed == "down"){ editordy+=3; }
   }
 
   // Play
@@ -756,34 +791,44 @@ c.onmousemove = e => {
   mousex = e.offsetX;
   mousey = e.offsetY;
   if(action == "add" && state == 1 && mousedown){
-    line[2] = mousex;
-    line[3] = mousey;
+    line[2] = mousex-editordx;
+    line[3] = mousey-editordy;
   }
 }
 
 // Mousedown / up
-c.onmousedown = e => {
-  mousedown = 1;
-  if(action == "add" && state == 1){
-    line[0] = mousex;
-    line[1] = mousey;
-    console.log(line);
+onmousedown = e => {
+  if(e.target.id == "c"){
+    mousedown = 1;
+      if(action == "add" && state == 1){
+      line[0] = mousex-editordx;
+      line[1] = mousey-editordy;
+      console.log(line);
+    }
+  }
+  else {
+    editorpressed = e.target.id;
   }
 }
 
-c.onmouseup = e => {
-  mousedown = 0;
-  if(action == "add" && state == 1){
-    line[2] = mousex;
-    line[3] = mousey;
-    //console.log(line);
-    //console.log((line[0] + line[2])/2);
-    //console.log((line[1] + line[3])/2);
-    //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
-    if(line[0] != line[2] || line[1] != line[3]) {
-      lines.push(line);
+onmouseup = e => {
+  if(e.target.id == "c" && line[0] && line[1]){
+    mousedown = 0;
+    if(action == "add" && state == 1){
+      line[2] = mousex-editordx;
+      line[3] = mousey-editordy;
+      //console.log(line);
+      //console.log((line[0] + line[2])/2);
+      //console.log((line[1] + line[3])/2);
+      //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
+      if(line[0] != line[2] || line[1] != line[3]) {
+        lines.push(line);
+      }
+      line = [0,0,0,0];
     }
-    line = [0,0,0,0];
+  }
+  else {
+    editorpressed = null;
   }
 }
 
