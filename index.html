@@ -25,7 +25,7 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 <canvas id=c width=800 height=600></canvas>
 <br>
 <div id=buttons class=xhidden>
-<button id=add_line class=active>ADD LINE</button>
+<button id=add_line class=active>DRAW LINE</button>
 <button id=del_line>DELETE LAST LINE</button>
 <button id=play>PLAY</button>
 <button id=share>SHARE</button>
@@ -511,6 +511,8 @@ mousey = 0;
 I = setInterval(()=>{
   c.width ^= 0;
   x.save();
+  
+  // Title
   if(state == 0){
     for(i in title){
       x.font = "90px i, impact, calibri, arial";
@@ -578,10 +580,12 @@ I = setInterval(()=>{
     }
   }
   
+  // Editor
   else if(state == 1){
     //x.fillRect(mousex, mousey, 5,5);
     x.lineWidth = 5;
     for(i of lines){
+      x.strokeStyle = "#000";
       x.moveTo(i[0], i[1]);
       x.lineTo(i[2], i[3]);
     }
@@ -593,6 +597,7 @@ I = setInterval(()=>{
     x.stroke();
   }
 
+  // Play
   else if(state == 2){
     
     // Compute collisions
@@ -644,10 +649,27 @@ I = setInterval(()=>{
         x.closePath();
         x.stroke();
       }
+      
   
       // Rectangle
       else { //if(objects[i].T == 1)
-        x.strokeRect(-objects[i].W / 2, -objects[i].H / 2, objects[i].W, objects[i].H);
+        x.fillStyle = "#000";
+        if(i > 1){
+          x.fillRect(-objects[i].W / 2, -objects[i].H / 2, objects[i].W, objects[i].H);
+        }
+        else if(i == 1){
+          //x.strokeRect(-objects[i].W / 2, -objects[i].H / 2, objects[i].W, objects[i].H);
+          x.font = "40px emoji";
+          x.fillText("🕺",-20,18);
+        }
+        else {
+          x.fillStyle = "#a01";
+          x.fillRect(-objects[i].W / 2, -objects[i].H / 2, objects[i].W, objects[i].H/2);
+          x.fillStyle = "#38c";
+          x.arc(-15,3,5,0,7);
+          x.arc(15,3,5,0,7);
+          x.fill();
+        }
       }
       
       x.restore();
@@ -692,7 +714,8 @@ onclick = (e) => {
       editor.classList.remove("hidden");
       clear.classList.add("hidden");
       objects = [];
-      Rectangle(Vec2(400, 300), 30, 30, 200, 1, 0);
+      Rectangle(Vec2(400, 300), 50, 10, 200, 1, 0);
+      Rectangle(Vec2(400, 280), 25, 40, 100, 1, 0);
       for(i of lines){
         r = Rectangle(
           Vec2((i[0] + i[2]) / 2, (i[1] + i[3]) / 2), // center
@@ -747,6 +770,7 @@ c.onmousedown = e => {
     console.log(line);
   }
 }
+
 c.onmouseup = e => {
   mousedown = 0;
   if(action == "add" && state == 1){
