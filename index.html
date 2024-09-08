@@ -14,11 +14,12 @@
 }
 html, body { overflow: hidden }
 body { background: #ccc; }
-canvas { background: radial-gradient(circle at 400px 0px, #fff 50%,#ddd 80%); display: block; margin: calc(50vh - 300px) auto; cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; }
-#buttons { position: absolute; top: 0; width: 800px; text-align: center; margin: calc(50vh - 285px) calc(50vw - 400px); }
+canvas { background: radial-gradient(circle at 400px 0px, #fff 50%,#ddd 80%); display: block; margin: calc(50vh - 300px) auto; cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; cursor: none; }
+#buttons { position: absolute; top: -38px; width: 800px; text-align: center; margin: calc(50vh - 285px) calc(50vw - 400px); }
 button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bold 16px calibri; cursor: pointer; }
 .hidden { display: none }
 .active { background: #fff; }
+#buttons2 { position: absolute; top: 38px }
 #up, #left, #reset, #right, #down { background: transparent; border: none; font: 30px emoji; padding: 0; position: absolute; text-shadow: 0 0 2px #000; }
 #up { top: 480px; left: 715px }
 #left { top: 515px; left: 680px }
@@ -32,17 +33,20 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 <br>
 <div id=buttons class=xhidden>
 <button id=add_line class=active>DRAW LINE</button>
-<button id=del_line>DELETE LAST LINE</button>
+<button id=add_ball>DRAW BALL</button>
+<button id=del_line>UNDO</button>
 <button id=play>PLAY</button>
 <button id=share>SHARE</button>
 <button id=load>LOAD</button>
 <button id=clear>CLEAR</button>
 <button id=editor class=hidden>RETURN TO EDITOR</button>
+<div id=buttons2>
 <button id=up>⬆️</button>
 <button id=left>⬅️</button>
 <button id=reset>⏺</button>
 <button id=right>➡️</button>
 <button id=down>⬇️</button>
+</div>
 </div>
 <script>
 
@@ -381,7 +385,7 @@ var testCollision = (c1, c2, info) => {
 
 var resolveCollision = (s1, s2, collisionInfo, skate) => {
 
-  if(collisionInfo.cs) console.log(collisionInfo.cs)
+  //if(collisionInfo.cs) console.log(collisionInfo.cs)
   if(!s1.M && !s2.M){
     return;
   }
@@ -598,19 +602,47 @@ I = setInterval(()=>{
   
   // Editor
   else if(state == 1){
-    //x.fillRect(mousex, mousey, 5,5);
+  
     x.lineWidth = 5;
+    
+    // All lines / balls
     for(i of lines){
-      x.strokeStyle = "#000";
-      x.moveTo(i[0]+editordx, i[1]+editordy);
-      x.lineTo(i[2]+editordx, i[3]+editordy);
+      if(i.length == 4){
+        x.beginPath();
+        x.strokeStyle = "#000";
+        x.moveTo(i[0]+editordx, i[1]+editordy);
+        x.lineTo(i[2]+editordx, i[3]+editordy);
+        x.stroke();
+        x.closePath();
+      }
+      else if(i.length == 3){
+        x.beginPath();
+        x.fillStyle = "#000";
+        x.arc(i[0]+editordx, i[1]+editordy, i[2], 0, 7);
+        x.fill();
+        x.closePath();
+      }
     }
+    
+    // Current line/ball
     if(line[2]){
-      x.strokeStyle = "#000";
-      x.moveTo(line[0]+editordx, line[1]+editordy);
-      x.lineTo(line[2]+editordx, line[3]+editordy);
+      if(line.length == 4){
+        x.beginPath();
+        x.strokeStyle = "#000";
+        x.moveTo(line[0]+editordx, line[1]+editordy);
+        x.lineTo(line[2]+editordx, line[3]+editordy);
+        x.stroke();
+        x.closePath();
+      }
+      
+      else if(line.length == 3){
+        x.beginPath();
+        x.fillStyle = "#000";
+        x.arc(line[0]+editordx, line[1]+editordy, line[2], 0, 7);
+        x.fill();
+        x.closePath();
+      }
     }
-    x.stroke();
     
     
     // man
@@ -625,11 +657,15 @@ I = setInterval(()=>{
     x.fill();
     x.closePath();
     
-    if(editorpressed == "up"){ editordy-=3; }
-    else if(editorpressed == "left"){ editordx-=3; }
+    // crayon
+    x.font = "40px emoji";
+    x.fillText("✏️",mousex-38,mousey-2);
+    
+    if(editorpressed == "up"){ editordy+=3; }
+    else if(editorpressed == "left"){ editordx+=3; }
     else if(editorpressed == "reset"){ editordx = editordy = 0; }
-    else if(editorpressed == "right"){ editordx+=3; }
-    else if(editorpressed == "down"){ editordy+=3; }
+    else if(editorpressed == "right"){ editordx-=3; }
+    else if(editorpressed == "down"){ editordy-=3; }
   }
 
   // Play
@@ -665,6 +701,11 @@ I = setInterval(()=>{
         }
       }
     }
+    
+    playerdx = objects[1].C.x;
+    playerdy = objects[1].C.y;
+    
+    //console.log(playerdx, playerdy);
   
     // Draw / Update scene
     for(i = objects.length; i--;){
@@ -673,7 +714,7 @@ I = setInterval(()=>{
       // ----
       
       x.save();
-      x.translate(objects[i].C.x, objects[i].C.y);
+      x.translate(objects[i].C.x+400-playerdx, objects[i].C.y+300-playerdy);
       x.rotate(objects[i].G);
       
       // Circle
@@ -682,12 +723,13 @@ I = setInterval(()=>{
         x.arc(0, 0, objects[i].B, 0, 7);
         x.lineTo(0, 0);
         x.closePath();
-        x.stroke();
+        x.fill();
       }
       
   
       // Rectangle
       else { //if(objects[i].T == 1)
+        x.beginPath();
         x.fillStyle = "#000";
         if(i > 1){
           x.fillRect(-objects[i].W / 2, -objects[i].H / 2, objects[i].W, objects[i].H);
@@ -705,6 +747,7 @@ I = setInterval(()=>{
           x.arc(15,3,5,0,7);
           x.fill();
         }
+        x.closePath();
       }
       
       x.restore();
@@ -729,19 +772,25 @@ onclick = (e) => {
     if(e.target.id == "add_line"){
       action = "add";
       add_line.classList.add("active");
+      add_ball.classList.remove("active");
+      del_line.classList.remove("active");
+      play.classList.remove("active");
+    }
+    if(e.target.id == "add_ball"){
+      action = "addball";
+      add_line.classList.remove("active");
+      add_ball.classList.add("active");
       del_line.classList.remove("active");
       play.classList.remove("active");
     }
     else if(e.target.id == "del_line"){
-      //action = "delete";
-      //add_line.classList.remove("active");
-      //del_line.classList.add("active");
-      //play.classList.remove("active");
       lines.pop();
     }
     else if(e.target.id == "play"){
+      buttons2.className = "hidden";
       state = 2;
       add_line.classList.add("hidden");
+      add_ball.classList.add("hidden");
       del_line.classList.add("hidden");
       play.classList.add("hidden");
       share.classList.add("hidden");
@@ -752,21 +801,35 @@ onclick = (e) => {
       Rectangle(Vec2(400, 300), 50, 10, 200, 1, 0);
       Rectangle(Vec2(400, 280), 25, 40, 100, 1, 0);
       for(i of lines){
-        r = Rectangle(
-          Vec2((i[0] + i[2]) / 2, (i[1] + i[3]) / 2), // center
-          distance(Vec2(i[0],i[1]), Vec2(i[2],i[3])), // w
-          5, // h
-          0, // mass
-          0, // friction 
-          0  // restitution
-        );
-        rotateShape(r, Math.atan2(i[3]-i[1], i[2]-i[0])); // angle
+        if(i.length == 4){
+          r = Rectangle(
+            Vec2((i[0] + i[2]) / 2, (i[1] + i[3]) / 2), // center
+            distance(Vec2(i[0],i[1]), Vec2(i[2],i[3])), // w
+            5, // h
+            0, // mass
+            0, // friction 
+            0  // restitution
+          );
+          rotateShape(r, Math.atan2(i[3]-i[1], i[2]-i[0])); // angle
+        }
+        else if(i.length == 3){
+          r = Circle(
+            Vec2(i[0], i[1]), // center
+            i[2], // r
+            20, // mass
+            0, // friction 
+            0  // restitution
+          );
+          rotateShape(r, Math.atan2(i[3]-i[1], i[2]-i[0])); // angle
+        }
       }
     }
     else if(e.target.id == "editor"){
       //action = "editor";
       state = 1;
+      buttons2.className = "";
       add_line.classList.remove("hidden");
+      add_ball.classList.remove("hidden");
       del_line.classList.remove("hidden");
       play.classList.remove("hidden");
       share.classList.remove("hidden");
@@ -787,12 +850,23 @@ onclick = (e) => {
 }
 
 // Mousemove
-c.onmousemove = e => {
-  mousex = e.offsetX;
-  mousey = e.offsetY;
-  if(action == "add" && state == 1 && mousedown){
-    line[2] = mousex-editordx;
-    line[3] = mousey-editordy;
+onmousemove = e => {
+
+  if(e.target.id == "c"){
+  
+    mousex = e.offsetX;
+    mousey = e.offsetY;
+    if(action == "add" && state == 1 && mousedown){
+      line[2] = mousex-editordx;
+      line[3] = mousey-editordy;
+    }
+    else if(action == "addball" && state == 1 && mousedown){
+      line[2] = distance(Vec2(mousex-editordx, mousey-editordy), Vec2(line[0],line[1]));
+      line.length = 3;
+    }
+  }
+  else {
+    mousex = mousey = -100;
   }
 }
 
@@ -800,10 +874,15 @@ c.onmousemove = e => {
 onmousedown = e => {
   if(e.target.id == "c"){
     mousedown = 1;
-      if(action == "add" && state == 1){
+    if(action == "add" && state == 1){
       line[0] = mousex-editordx;
       line[1] = mousey-editordy;
-      console.log(line);
+      //console.log(line);
+    }
+    else if(action == "addball" && state == 1){
+      line[0] = mousex-editordx;
+      line[1] = mousey-editordy;
+      //console.log(line);
     }
   }
   else {
@@ -825,6 +904,18 @@ onmouseup = e => {
         lines.push(line);
       }
       line = [0,0,0,0];
+    }
+    else if(action == "addball" && state == 1){
+      line[2] = distance(Vec2(mousex-editordx, mousey-editordy), Vec2(line[0],line[1]));
+      line.length = 3;
+      console.log(line);
+      //console.log((line[0] + line[2])/2);
+      //console.log((line[1] + line[3])/2);
+      //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
+      if(line[0] != line[2] || line[1] != line[3]) {
+        lines.push(line);
+      }
+      line = [0,0,0];
     }
   }
   else {
