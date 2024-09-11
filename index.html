@@ -17,7 +17,7 @@ body { background: #ccc; }
 canvas { background: radial-gradient(circle at 400px 0px, #fff 50%,#ddd 80%); display: block; margin: calc(50vh - 300px) auto; cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; }
 #buttons { position: absolute; top: -38px; width: 800px; text-align: center; margin: calc(50vh - 285px) calc(50vw - 400px); }
 button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bold 16px calibri; cursor: pointer; }
-.hidden { display: none }
+.hidden { display: none!important }
 .active { background: #fff; }
 #buttons2 { position: absolute; top: 38px }
 #up, #left, #reset, #right, #down { background: transparent; border: none; font: 30px emoji; padding: 0; position: absolute; text-shadow: 0 0 2px #000; }
@@ -26,6 +26,14 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 #reset { top: 515px; left: 715px }
 #right { top: 515px; left: 750px }
 #down { top: 550px; left: 715px }
+#bghost { width: 130px }
+#challengepage { display: block; position: fixed; top: 50%; left: 50%; transform: translateX(-50%)translateY(-50%); cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; width: 720px; height: 400px; background: #fff; padding: 10px 20px 120px; font: 20px Calibri, Arial}
+#challengeok { display: block; position: fixed; bottom: 50%; left: 50%; transform: translateX(-50%)translateY(290px); cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; width: 730px; background: #fff; padding: 10px; font: 20px Calibri, Arial}
+#challengepage p { margin: 10px 0 15px }
+#challengepage input { width: 30px; height: 30px; vertical-align: middle; pointer-events: none; }
+#timer { display: inline-block; width: 150px; font: bold 20px Calibri, Arial; }
+h1 { margin: 0 }
+h3 { margin-top: 10px }
 </style>
 </head>
 <body>
@@ -39,8 +47,11 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 <button id=share>SHARE</button>
 <button id=load>LOAD</button>
 <button id=clear>CLEAR</button>
+<button id=challenges>CHALLENGES</button>
+<button id=bghost class=hidden>GHOST VISIBLE</button>
 <button id=editor class=hidden>RETURN TO EDITOR</button>
 <button id=bmusic class=hidden>MUSIC ON</button>
+<span id=timer class=hidden>0.00</span>
 <div id=buttons2>
 <button id=up>⬆️</button>
 <button id=left>⬅️</button>
@@ -48,6 +59,21 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 <button id=right>➡️</button>
 <button id=down>⬇️</button>
 </div>
+</div>
+
+<div id=challengepage class=hidden>
+  <h1><center>Challenges</center></h1>
+  <h3><center>Try to do these stunts in less than 13 seconds<br>and by drawing a maximum of 13 items?</center></h3>
+  <p><input type=checkbox id=ch5> Make the skater go lower than its skate
+  <!--p><input type=checkbox id=ch6> The skater can only touch balls and the skate can only touch lines for 13 seconds-->
+  <br><p><input type=checkbox id=ch1> Separate the skater and the skate, then make them touch again
+  <p><input type=checkbox id=ch4> Make 5 full rotations with the skate 
+  <p><input type=checkbox id=ch3> Flip the skate upside-down then make the skater stand up on it
+  <p><input type=checkbox id=ch2> Get the skater higher than its starting point
+  <p><center><button onclick='challengepage.className="hidden"'>CLOSE</button></center>
+</div>
+
+<div id=challengeok class=hidden>
 </div>
 <script>
 
@@ -599,6 +625,22 @@ playerdx = 0;
 playerdy = 0;
 editorpressed = null; 
 erasetarget = -1;
+ghost = [];
+frame = 0;
+ghostvisible = 1;
+challengevisible = 0;
+rcx = null;
+rcy = null;
+challenge1 = 0;
+challenge2 = 0;
+challenge3 = 0;
+challenge4turns = 0;
+challenge4 = 0;
+challenge5 = 0;
+challenge6 = 0;
+challenge6skatertouch = 0;
+challenge6skatetouch = 0;
+challenge6fail = 0;
 
 // Render / Game loop
 I = setInterval(()=>{
@@ -680,7 +722,7 @@ I = setInterval(()=>{
     erasetarget = -1;
     
     // All lines / balls
-    for(i in lines){
+    for(i = 0; i < lines.length; i++){
       x.fillStyle = "#000";
       if(lines[i].length == 4){
         x.save();
@@ -692,6 +734,14 @@ I = setInterval(()=>{
           x.fillStyle = "#F00";
           erasetarget = i;
         }
+        if(x.isPointInPath(rcx, rcy)){
+          x.fillStyle = "#F00";
+          erasetarget = i;
+          lines.splice(erasetarget, 1);
+          i--;
+          rcx = null;
+          rcy = null;
+        }
         x.fill()
         x.closePath();
         x.restore();
@@ -702,6 +752,14 @@ I = setInterval(()=>{
         if(x.isPointInPath(mousex, mousey) && action == "erase"){
           x.fillStyle = "#F00";
           erasetarget = i;
+        }
+        if(x.isPointInPath(rcx, rcy)){
+          x.fillStyle = "#F00";
+          erasetarget = i;
+          lines.splice(erasetarget, 1);
+          i--;
+          rcx = null;
+          rcy = null;
         }
         x.fill();
         x.closePath();
@@ -750,10 +808,47 @@ I = setInterval(()=>{
     else if(editorpressed == "reset"){ editordx = editordy = 0; }
     else if(editorpressed == "right"){ editordx-=3; }
     else if(editorpressed == "down"){ editordy-=3; }
+    
+    if(keys.u){ editordy += 6 }
+    else if(keys.l){ editordx += 6 }
+    else if(keys.r){ editordx -= 6 }
+    else if(keys.d){ editordy -= 6 }
+    
+    // Ghost
+    if(ghostvisible){
+      for(i of ghost){
+        x.save();
+        x.translate(editordx+i[0].x+0,editordy+i[0].y+0);
+        x.rotate(i[1]);
+        x.globalAlpha = .1;
+        x.beginPath();
+        x.font = "40px emoji";
+        x.fillText("🕺",-23,13);
+        x.closePath();
+        x.restore();
+        
+        
+        x.save();
+        x.translate(editordx+i[2].x,editordy+i[2].y);
+        x.rotate(i[3]);
+        x.globalAlpha = .1;
+        x.beginPath();
+        x.fillStyle = "#a01";
+        x.fillRect(-25, 0, 50, -6);
+        x.fillStyle = "#38c";
+        x.arc(-15,0,5,0,7);
+        x.arc(15,0,5,0,7);
+        x.fill();
+        x.closePath();
+        x.restore();
+      }
+    }
   }
 
   // Play
   else if(state == 2){
+  
+    frame++;
     
     // Compute collisions
     for(k = 9; k--;){
@@ -841,7 +936,81 @@ I = setInterval(()=>{
       moveShape(objects[i], scale(objects[i].V, 1/60));
       objects[i].v += objects[i].a * 1/60;
       rotateShape(objects[i], objects[i].v * 1/60);
+      
+
     }
+    
+    if(frame % 60 == 0){
+      ghost.push([objects[1].C, objects[1].G, objects[0].C, objects[0].G]);
+      //console.log(objects[0].C, objects[0].G, objects[1].C, objects[1].G);
+      
+      
+      //console.log(objects[1].C.y < objects[0].C.y)
+    }
+    
+    // Skate: Count turns, keep angle between 0 and 2 Pi
+    if(objects[0].G > 2 * Math.PI){ objects[0].G -= 2*Math.PI; challenge4turns-- }
+    if(objects[0].G < 0){ objects[0].G += 2*Math.PI; challenge4turns++ }
+    
+    // Skater: keep angle between 0 and 2 Pi
+    if(objects[1].G > 2 * Math.PI){ objects[1].G -= 2*Math.PI;}
+    if(objects[1].G < 0){ objects[1].G += 2*Math.PI;}
+    
+    
+    // Challenge 1
+    
+    if(objects.length <= 15 && frame < 13*60 && challenge1 == 0 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) > 40){
+      challenge1 = 0.5;
+      //console.log(.5);
+    }
+    if(challenge1 == 0 && objects.length <= 15 && frame < 13*60 && challenge1 == 0.5 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) < 30){
+      challenge1 = 1;
+      ch1.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared:Separate the skater and the skate, then make them touch again</b>";
+      //console.log(1);
+    }
+    
+    // Challenge 2 
+    
+    if(challenge2 == 0 && objects.length <= 15 && frame < 13*60 && objects[1].C.y < 270){
+      challenge2 = 1;
+      ch2.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: Get the skater higher than its starting point</b>";
+    }
+    
+    // Challenge 3
+    
+    if(challenge3 == 0 && objects.length <= 15 && frame < 13*60 && objects[0].G > 2.7 && objects[0].G < 3.5 && (objects[1].G > 5.5 || objects[1].G < .5) && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) < 35 && objects[1].C.y < objects[0].C.y){
+      challenge3 = 1;
+      ch3.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: Flip the skate upside-down then make the skater stand up on it</b>";
+      //console.log(3);
+    }
+    
+    // Challenge 4
+    
+    if(challenge4 == 0 && objects.length <= 15 && frame < 13*60 && (challenge4turns >= 5 || challenge4turns <= -5)){
+      challenge4 = 1;
+      ch4.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: Make 5 full rotations with the skate</b>";
+      console.log(1);
+    }
+    
+    // Challenge 5
+    
+    if(challenge5 == 0 && objects.length <= 15 && frame < 13*60 && objects[1].C.y > objects[0].C.y){
+      challenge5 = 1;
+      ch5.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: Make the skater go lower than its skate</b>";
+    }
+    
+    timer.innerHTML = (frame/60).toFixed(2);
+    //console.log(objects[1].G)
   }
 }, 16)
 
@@ -882,6 +1051,17 @@ onclick = (e) => {
       play.classList.remove("active");
     }
     else if(e.target.id == "play"){
+      if(challenge1 != 1) challenge1 = 0;
+      if(challenge2 != 1) challenge2 = 0;
+      if(challenge3 != 1) challenge3 = 0;
+      if(challenge4 != 1) challenge4 = 0;
+      if(challenge5 != 1) challenge5 = 0;
+      if(challenge6 != 1) challenge6 = 0;
+      challenge4turns = 0;
+      challenge6skatertouch = 0;
+      challenge6skatetouch = 0;
+      challenge6fail = 0;
+      ghost = [];
       c.style.cursor = "pointer";
       musicint = setInterval(play_next_note,380);
       note = 0;
@@ -895,16 +1075,19 @@ onclick = (e) => {
       load.classList.add("hidden");
       editor.classList.remove("hidden");
       bmusic.classList.remove("hidden");
+      timer.classList.remove("hidden");
       clear.classList.add("hidden");
+      bghost.classList.add("hidden");
+      challenges.classList.add("hidden");
       objects = [];
-      Rectangle(Vec2(400, 300), 50, 10, 200, 1, 0);
-      Rectangle(Vec2(400, 280), 25, 40, 100, 1, 0);
+      Rectangle(Vec2(400, 300), 50, 10, 20, 1, 0); // skate
+      Rectangle(Vec2(400, 280), 25, 40, 10, 1, 0); // man
       for(i of lines){
         if(i.length == 4){
           r = Rectangle(
             Vec2((i[0] + i[2]) / 2, (i[1] + i[3]) / 2), // center
             distance(Vec2(i[0],i[1]), Vec2(i[2],i[3])), // w
-            5, // h
+            8, // h
             0, // mass
             0, // friction 
             0  // restitution
@@ -922,9 +1105,14 @@ onclick = (e) => {
           rotateShape(r, Math.atan2(i[3]-i[1], i[2]-i[0])); // angle
         }
       }
+      //console.log(objects[0].C, objects[0].G, objects[1].C, objects[1].G)
     }
     else if(e.target.id == "editor"){
+      frame = 0;
       c.style.cursor = "none";
+      bghost.classList.remove("hidden");
+      challengeok.classList.add("hidden");
+      challengeok.innerHTML = "";
       clearInterval(musicint)
       //action = "editor";
       state = 1;
@@ -937,13 +1125,15 @@ onclick = (e) => {
       load.classList.remove("hidden");
       editor.classList.add("hidden");
       bmusic.classList.add("hidden");
+      timer.classList.add("hidden");
       clear.classList.remove("hidden");
+      challenges.classList.remove("hidden");
     }
     else if(e.target.id == "share"){
       prompt("Here's your creation",JSON.stringify(lines));
     }
     else if(e.target.id == "clear"){
-      if(confirm("Are you sure?")) { lines = []; line = []; }
+      if(confirm("Are you sure?")) { lines = []; line = []; ghost = []; }
     }
     else if(e.target.id == "load"){
       if(lines.length == 0 || confirm("This will erase existing data. Are you sure?")) { lines = JSON.parse(prompt("Enter creation code here")); line = []; }
@@ -952,6 +1142,16 @@ onclick = (e) => {
     else if(e.target.id == "bmusic"){
       musicon = 1 - musicon;
       bmusic.innerHTML = musicon ? "MUSIC ON" : "MUSIC OFF";
+    }
+    
+    else if(e.target.id == "bghost"){
+      ghostvisible = 1 - ghostvisible;
+      bghost.innerHTML = ghostvisible ? "GHOST VISIBLE" : "GHOST HIDDEN";
+    }
+    
+    else if(e.target.id == "challenges"){
+      challengevisible = 1 - challengevisible;
+      challengepage.className = challengevisible ? "" : "hidden";
     }
   }
 }
@@ -968,7 +1168,7 @@ onmousemove = e => {
       line[3] = mousey-editordy;
     }
     else if(action == "addball" && state == 1 && mousedown){
-      line[2] = distance(Vec2(mousex-editordx, mousey-editordy), Vec2(line[0],line[1]));
+      line[2] = Math.min(distance(Vec2(mousex-editordx, mousey-editordy), Vec2(line[0],line[1])), distance(Vec2(line[0],line[1]),Vec2(400,280))-30);
       line.length = 3;
     }
   }
@@ -979,6 +1179,7 @@ onmousemove = e => {
 
 // Mousedown / up
 onmousedown = e => {
+  if(e.which != 1) return;
   if(e.target.id == "c" && state == 1){
     mousedown = 1;
     if(action == "add" && state == 1){
@@ -998,6 +1199,7 @@ onmousedown = e => {
 }
 
 onmouseup = e => {
+  if(e.which != 1) return;
   mousedown = 0;
   if(e.target.id == "c" && line[0] && line[1]){
     if(action == "add" && state == 1){
@@ -1013,7 +1215,7 @@ onmouseup = e => {
       line = [0,0,0,0];
     }
     else if(action == "addball" && state == 1){
-      line[2] = Math.round(distance(Vec2(mousex-editordx, mousey-editordy), Vec2(line[0],line[1])));
+      line[2] = Math.round(line[2]);
       line.length = 3;
       //console.log(line);
       //console.log((line[0] + line[2])/2);
@@ -1030,5 +1232,31 @@ onmouseup = e => {
   }
 }
 
+// Keyboard
+keys = {};
+onkeydown=onkeyup = e => {
+  keys['E**S***************s****lurd************************lBCr*F***J***N**lRdT*VuXYu'[e.which-13]]=e.type[5]
+}
+
+// Wheel
+onwheel = e => {
+  if(state == 1){
+    if(e.deltaY < 0){
+      editordy += 50;
+    }
+    else if(e.deltaY > 0){
+      editordy -= 50;
+    }
+  }
+}
+
+// Right click
+oncontextmenu = e => {
+  e.preventDefault();
+  rcx = e.offsetX;
+  rcy = e.offsetY;
+  console.log(rcx, rcy);
+  return false;
+}
 </script>
 </body>
