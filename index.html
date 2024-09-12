@@ -27,10 +27,11 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 #right { top: 515px; left: 750px }
 #down { top: 550px; left: 715px }
 #bghost { width: 130px }
-#challengepage { display: block; position: fixed; top: 50%; left: 50%; transform: translateX(-50%)translateY(-50%); cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; width: 720px; height: 400px; background: #fff; padding: 10px 20px 120px; font: 20px Calibri, Arial}
+#challengepage { display: block; position: fixed; top: 50%; left: 50%; transform: translateX(-50%)translateY(-50%); cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; width: 720px; height: 430px; background: #fff; padding: 10px 20px 120px; font: 20px Calibri, Arial}
 #challengeok { display: block; position: fixed; bottom: 50%; left: 50%; transform: translateX(-50%)translateY(290px); cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; width: 730px; background: #fff; padding: 10px; font: 20px Calibri, Arial}
-#challengepage p { margin: 10px 0 15px }
-#challengepage input { width: 30px; height: 30px; vertical-align: middle; pointer-events: none; }
+#challengepage h3 { margin: 20px 0 30px }
+#challengepage p { margin: 15px 30px 10px }
+#challengepage input { width: 20px; height: 20px; vertical-align: middle; pointer-events: none; }
 #timer { display: inline-block; width: 150px; font: bold 20px Calibri, Arial; }
 h1 { margin: 0 }
 h3 { margin-top: 10px }
@@ -62,15 +63,18 @@ h3 { margin-top: 10px }
 </div>
 
 <div id=challengepage class=hidden>
-  <h1><center>Challenges</center></h1>
-  <h3><center>Try to do these stunts in less than 13 seconds<br>and by drawing a maximum of 13 items?</center></h3>
+  <h1><center>Triska deika challenges!</center></h1>
+  <h3><center>Do these stunts in less than 13 seconds with a maximum of 13 items</center></h3>
   <p><input type=checkbox id=ch5> Make the skater go lower than its skate
-  <!--p><input type=checkbox id=ch6> The skater can only touch balls and the skate can only touch lines for 13 seconds-->
+  <p><input type=checkbox id=ch6> The skater must only touch balls and the skate must only touch lines
   <br><p><input type=checkbox id=ch1> Separate the skater and the skate, then make them touch again
+  <p><input type=checkbox id=ch8> Make the skater touch 10 different balls
   <p><input type=checkbox id=ch4> Make 5 full rotations with the skate 
+  <p><input type=checkbox id=ch7> The skater must only touch lines and the skate must only touch balls
   <p><input type=checkbox id=ch3> Flip the skate upside-down then make the skater stand up on it
+  <p><input type=checkbox id=ch9> Make the skater touch 12 different balls
   <p><input type=checkbox id=ch2> Get the skater higher than its starting point
-  <p><center><button onclick='challengepage.className="hidden"'>CLOSE</button></center>
+  <br><p><center><button onclick='challengepage.className="hidden"'>CLOSE</button></center>
 </div>
 
 <div id=challengeok class=hidden>
@@ -580,15 +584,6 @@ var Circle = (center, radius, mass, friction, restitution) => RigidShape(center,
 // New rectangle
 var Rectangle = (center, width, height, mass, friction, restitution) => RigidShape(center, mass, friction, restitution, 1, Math.hypot(width, height)/2, width, height);
 
-
-/*
-Rectangle(Vec2(500, 145), 20, 20, 100, 1, 0);
-
-r = Rectangle(Vec2(500, 200), 400, 2, 0, 0, 0);
-rotateShape(r, 2.8);
-r = Rectangle(Vec2(270, 250), 100, 2, 0, 0, 0);
-rotateShape(r, -2.8);*/
-
 // Helpers
 lerp = (start, end, amt) => {
   if(amt > 1) amt = 1;
@@ -631,16 +626,32 @@ ghostvisible = 1;
 challengevisible = 0;
 rcx = null;
 rcy = null;
-challenge1 = 0;
-challenge2 = 0;
-challenge3 = 0;
+challenge1 = localStorage.hiii_1 || 0;
+if(challenge1) ch1.setAttribute("checked", "true");
+challenge2 = localStorage.hiii_2 || 0;
+if(challenge2) ch2.setAttribute("checked", "true");
+challenge3 = localStorage.hiii_3 || 0;
+if(challenge3) ch3.setAttribute("checked", "true");
 challenge4turns = 0;
-challenge4 = 0;
-challenge5 = 0;
-challenge6 = 0;
-challenge6skatertouch = 0;
-challenge6skatetouch = 0;
+challenge4 = localStorage.hiii_4 || 0;
+if(challenge4) ch4.setAttribute("checked", "true");
+challenge5 = localStorage.hiii_5 || 0;
+if(challenge5) ch5.setAttribute("checked", "true");
+challenge6 = localStorage.hiii_6 || 0;
+if(challenge6) ch6.setAttribute("checked", "true");
 challenge6fail = 0;
+challenge7 = localStorage.hiii_7 || 0;
+if(challenge7) ch7.setAttribute("checked", "true");
+challenge8 = localStorage.hiii_8 || 0;
+if(challenge8) ch8.setAttribute("checked", "true");
+challenge9 = localStorage.hiii_9 || 0;
+if(challenge9) ch9.setAttribute("checked", "true");
+challenge7fail = 0;
+skatertouchedaball = 0;
+skatertouchedaline = 0;
+skatetouchedaball = 0;
+skatetouchedaline = 0;
+ballstouched = [];
 
 // Render / Game loop
 I = setInterval(()=>{
@@ -855,6 +866,7 @@ I = setInterval(()=>{
       for(i = objects.length; i--;){
         for(j = objects.length; j-- > i;){
         
+        
           
           // Test bounds
           if(boundTest(objects[i], objects[j])){
@@ -875,6 +887,34 @@ I = setInterval(()=>{
               
               // Resolve collision
               resolveCollision(objects[i], objects[j], collisionInfo,i==0&&j==1);
+              
+              // Skater touched a ball
+              if(i == 1 && j > 1 && objects[j].T == 0){
+                //console.log("skater ball");
+                skatertouchedaball = 1;
+                if(!ballstouched.includes(j)){
+                  ballstouched.push(j);
+                  console.log(ballstouched);
+                }
+              }
+              
+              // Skater touched a line
+              if(!skatertouchedaline && i == 1 && j > 1 && objects[j].T == 1){
+                //console.log("skater line");
+                skatertouchedaline = 1;
+              }
+              
+              // Skate touched a ball
+              if(!skatetouchedaball && i == 0 && j > 1 && objects[j].T == 0){
+                //console.log("skate ball");
+                skatetouchedaball = 1;
+              }
+              
+              // Skate touched a line
+              if(!skatetouchedaline && i == 0 && j > 1 && objects[j].T == 1){
+                //console.log("skate line");
+                skatetouchedaline = 1;
+              }
             }
           }
         }
@@ -959,15 +999,16 @@ I = setInterval(()=>{
     
     // Challenge 1
     
-    if(objects.length <= 15 && frame < 13*60 && challenge1 == 0 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) > 40){
+    if(objects.length <= 15 && frame < 13*60 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) > 40){
       challenge1 = 0.5;
       //console.log(.5);
     }
-    if(challenge1 == 0 && objects.length <= 15 && frame < 13*60 && challenge1 == 0.5 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) < 30){
+    if(challenge1 == 0.5 && objects.length <= 15 && frame < 13*60 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) < 30){
       challenge1 = 1;
+      localStorage.hiii_1 = 1;
       ch1.setAttribute("checked", "true");
       challengeok.className = "";
-      challengeok.innerHTML += "<div><b>Challenge cleared:Separate the skater and the skate, then make them touch again</b>";
+      challengeok.innerHTML += "<div><b>Challenge cleared: separate the skater and the skate, then make them touch again</b>";
       //console.log(1);
     }
     
@@ -975,18 +1016,20 @@ I = setInterval(()=>{
     
     if(challenge2 == 0 && objects.length <= 15 && frame < 13*60 && objects[1].C.y < 270){
       challenge2 = 1;
+      localStorage.hiii_2 = 1;
       ch2.setAttribute("checked", "true");
       challengeok.className = "";
-      challengeok.innerHTML += "<div><b>Challenge cleared: Get the skater higher than its starting point</b>";
+      challengeok.innerHTML += "<div><b>Challenge cleared: get the skater higher than its starting point</b>";
     }
     
     // Challenge 3
     
     if(challenge3 == 0 && objects.length <= 15 && frame < 13*60 && objects[0].G > 2.7 && objects[0].G < 3.5 && (objects[1].G > 5.5 || objects[1].G < .5) && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) < 35 && objects[1].C.y < objects[0].C.y){
       challenge3 = 1;
+      localStorage.hiii_3 = 1;
       ch3.setAttribute("checked", "true");
       challengeok.className = "";
-      challengeok.innerHTML += "<div><b>Challenge cleared: Flip the skate upside-down then make the skater stand up on it</b>";
+      challengeok.innerHTML += "<div><b>Challenge cleared: flip the skate upside-down then make the skater stand up on it</b>";
       //console.log(3);
     }
     
@@ -994,9 +1037,10 @@ I = setInterval(()=>{
     
     if(challenge4 == 0 && objects.length <= 15 && frame < 13*60 && (challenge4turns >= 5 || challenge4turns <= -5)){
       challenge4 = 1;
+      localStorage.hiii_4 = 1;
       ch4.setAttribute("checked", "true");
       challengeok.className = "";
-      challengeok.innerHTML += "<div><b>Challenge cleared: Make 5 full rotations with the skate</b>";
+      challengeok.innerHTML += "<div><b>Challenge cleared: make 5 full rotations with the skate</b>";
       console.log(1);
     }
     
@@ -1004,10 +1048,52 @@ I = setInterval(()=>{
     
     if(challenge5 == 0 && objects.length <= 15 && frame < 13*60 && objects[1].C.y > objects[0].C.y){
       challenge5 = 1;
+      localStorage.hiii_5 = 1;
       ch5.setAttribute("checked", "true");
       challengeok.className = "";
-      challengeok.innerHTML += "<div><b>Challenge cleared: Make the skater go lower than its skate</b>";
+      challengeok.innerHTML += "<div><b>Challenge cleared: make the skater go lower than its skate</b>";
     }
+    
+    // Challenge 6
+    
+    if(challenge6 == 0 && objects.length <= 15 && frame == 13*60 && skatertouchedaball == 1 && skatertouchedaline == 0 && skatetouchedaball == 0 && skatetouchedaline == 1){
+      challenge6 = 1;
+      localStorage.hiii_6 = 1;
+      ch6.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: the skater must only touch balls and the skate must only touch lines</b>";
+    }
+    
+    // Challenge 7
+    
+    if(challenge7 == 0 && objects.length <= 15 && frame == 13*60 && skatertouchedaball == 0 && skatertouchedaline == 1 && skatetouchedaball == 1 && skatetouchedaline == 0){
+      challenge7 = 1;
+      localStorage.hiii_7 = 1;
+      ch7.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: the skater must only touch lines and the skate must only touch balls</b>";
+    }
+    
+    // Challenge 8
+    
+    if(challenge8 == 0 && objects.length <= 15 && frame < 13*60 && ballstouched.length >= 10){
+      challenge8 = 1;
+      localStorage.hiii_8 = 1;
+      ch8.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: make the skater touch 10 different balls</b>";
+    }
+    
+    // Challenge 9
+    
+    if(challenge9 == 0 && objects.length <= 15 && frame < 13*60 && ballstouched.length >= 12){
+      challenge9 = 1;
+      localStorage.hiii_9 = 1;
+      ch9.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: make the skater touch 12 different balls</b>";
+    }
+    
     
     timer.innerHTML = (frame/60).toFixed(2);
     //console.log(objects[1].G)
@@ -1030,6 +1116,8 @@ onclick = (e) => {
     
     //console.log(e.target.id);
     if(e.target.id == "add_line"){
+      challengevisible = 0;
+      challengepage.className = "hidden";
       action = "add";
       add_line.classList.add("active");
       add_ball.classList.remove("active");
@@ -1037,6 +1125,8 @@ onclick = (e) => {
       play.classList.remove("active");
     }
     if(e.target.id == "add_ball"){
+      challengevisible = 0;
+      challengepage.className = "hidden";
       action = "addball";
       add_line.classList.remove("active");
       add_ball.classList.add("active");
@@ -1044,6 +1134,8 @@ onclick = (e) => {
       play.classList.remove("active");
     }
     else if(e.target.id == "del_line"){
+      challengevisible = 0;
+      challengepage.className = "hidden";
       action = "erase";
       add_line.classList.remove("active");
       add_ball.classList.remove("active");
@@ -1051,16 +1143,15 @@ onclick = (e) => {
       play.classList.remove("active");
     }
     else if(e.target.id == "play"){
-      if(challenge1 != 1) challenge1 = 0;
-      if(challenge2 != 1) challenge2 = 0;
-      if(challenge3 != 1) challenge3 = 0;
-      if(challenge4 != 1) challenge4 = 0;
-      if(challenge5 != 1) challenge5 = 0;
-      if(challenge6 != 1) challenge6 = 0;
+      challengevisible = 0;
+      challengepage.className = "hidden";
+      if(challenge1 < 1) challenge1 = 0;
       challenge4turns = 0;
-      challenge6skatertouch = 0;
-      challenge6skatetouch = 0;
-      challenge6fail = 0;
+      skatertouchedaball = 0;
+      skatertouchedaline = 0;
+      skatetouchedaball = 0;
+      skatetouchedaline = 0;
+      ballstouched = [];
       ghost = [];
       c.style.cursor = "pointer";
       musicint = setInterval(play_next_note,380);
@@ -1130,13 +1221,19 @@ onclick = (e) => {
       challenges.classList.remove("hidden");
     }
     else if(e.target.id == "share"){
+      challengevisible = 0;
+      challengepage.className = "hidden";
       prompt("Here's your creation",JSON.stringify(lines));
     }
     else if(e.target.id == "clear"){
-      if(confirm("Are you sure?")) { lines = []; line = []; ghost = []; }
+      challengevisible = 0;
+      challengepage.className = "hidden";
+      if(confirm("Are you sure?")) { lines = []; line = []; ghost = []; editordx = 0; editordy = 0; }
     }
     else if(e.target.id == "load"){
-      if(lines.length == 0 || confirm("This will erase existing data. Are you sure?")) { lines = JSON.parse(prompt("Enter creation code here")); line = []; }
+      challengevisible = 0;
+      challengepage.className = "hidden";
+      if(lines.length == 0 || confirm("This will erase existing data. Are you sure?")) { lines = JSON.parse(prompt("Enter creation code here")); line = []; ghost = []; editordx = 0; editordy = 0;  }
     }
     
     else if(e.target.id == "bmusic"){
@@ -1147,6 +1244,8 @@ onclick = (e) => {
     else if(e.target.id == "bghost"){
       ghostvisible = 1 - ghostvisible;
       bghost.innerHTML = ghostvisible ? "GHOST VISIBLE" : "GHOST HIDDEN";
+      challengevisible = 0;
+      challengepage.className = "hidden";
     }
     
     else if(e.target.id == "challenges"){
@@ -1221,7 +1320,7 @@ onmouseup = e => {
       //console.log((line[0] + line[2])/2);
       //console.log((line[1] + line[3])/2);
       //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
-      if(line[0] != line[2] || line[1] != line[3]) {
+      if(line[2] > 1) {
         lines.push(line);
       }
       line = [0,0,0];
@@ -1255,7 +1354,7 @@ oncontextmenu = e => {
   e.preventDefault();
   rcx = e.offsetX;
   rcy = e.offsetY;
-  console.log(rcx, rcy);
+  //console.log(rcx, rcy);
   return false;
 }
 </script>
