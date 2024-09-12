@@ -15,24 +15,25 @@
 html, body { overflow: hidden }
 body { background: #ccc; }
 canvas { background: radial-gradient(circle at 400px 0px, #fff 50%,#ddd 80%); display: block; margin: calc(50vh - 300px) auto; cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; }
-#buttons { position: absolute; top: -38px; width: 800px; text-align: center; margin: calc(50vh - 285px) calc(50vw - 400px); }
+#buttons { position: absolute; top: -38px; left: -15px; width: 830px; text-align: center; margin: calc(50vh - 285px) calc(50vw - 400px); }
 button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bold 16px calibri; cursor: pointer; }
 .hidden { display: none!important }
 .active { background: #fff; }
 #buttons2 { position: absolute; top: 38px }
 #up, #left, #reset, #right, #down { background: transparent; border: none; font: 30px emoji; padding: 0; position: absolute; text-shadow: 0 0 2px #000; }
-#up { top: 480px; left: 715px }
-#left { top: 515px; left: 680px }
-#reset { top: 515px; left: 715px }
-#right { top: 515px; left: 750px }
-#down { top: 550px; left: 715px }
-#bghost { width: 130px }
+#up { top: 480px; left: 735px }
+#left { top: 515px; left: 700px }
+#reset { top: 515px; left: 735px }
+#right { top: 515px; left: 770px }
+#down { top: 550px; left: 735px }
+#bghost { width: 100px }
 #challengepage { display: block; position: fixed; top: 50%; left: 50%; transform: translateX(-50%)translateY(-50%); cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; width: 720px; height: 430px; background: #fff; padding: 10px 20px 120px; font: 20px Calibri, Arial}
 #challengeok { display: block; position: fixed; bottom: 50%; left: 50%; transform: translateX(-50%)translateY(290px); cursor: pointer; box-shadow: 5px 5px 50px #888; border-radius: 10px; width: 730px; background: #fff; padding: 10px; font: 20px Calibri, Arial}
-#challengepage h3 { margin: 20px 0 30px }
-#challengepage p { margin: 15px 30px 10px }
+#challengepage h3 { margin: 10px 0 20px }
+#challengepage button { top: 20px; right: 20px; position: absolute; }
+#challengepage p { margin: 15px 20px 10px; letter-spacing: -.5px; }
 #challengepage input { width: 20px; height: 20px; vertical-align: middle; pointer-events: none; }
-#timer { display: inline-block; width: 150px; font: bold 20px Calibri, Arial; }
+#timer { display: inline-block; width: 90px; font: bold 20px Calibri, Arial; height: 19px; overflow: hidden; }
 h1 { margin: 0 }
 h3 { margin-top: 10px }
 </style>
@@ -49,10 +50,10 @@ h3 { margin-top: 10px }
 <button id=load>LOAD</button>
 <button id=clear>CLEAR</button>
 <button id=challenges>CHALLENGES</button>
-<button id=bghost class=hidden>GHOST VISIBLE</button>
+<button id=bghost>GHOST ON</button>
 <button id=editor class=hidden>RETURN TO EDITOR</button>
 <button id=bmusic class=hidden>MUSIC ON</button>
-<span id=timer class=hidden>0.00</span>
+<span id=timer>0 items</span>
 <div id=buttons2>
 <button id=up>⬆️</button>
 <button id=left>⬅️</button>
@@ -64,17 +65,18 @@ h3 { margin-top: 10px }
 
 <div id=challengepage class=hidden>
   <h1><center>Triska deika challenges!</center></h1>
-  <h3><center>Do these stunts in less than 13 seconds with a maximum of 13 items</center></h3>
+  <h3><center>Do these stunts in less than <u>13 seconds</u> with a maximum of <u>13 items</u></center></h3>
   <p><input type=checkbox id=ch5> Make the skater go lower than its skate
+  <p><input type=checkbox id=ch10> Make the skater touch 5 different balls
   <p><input type=checkbox id=ch6> The skater must only touch balls and the skate must only touch lines
-  <br><p><input type=checkbox id=ch1> Separate the skater and the skate, then make them touch again
+  <br><p><input type=checkbox id=ch1> Separate the skater and the skate (at least 1 meter) then make them touch again
   <p><input type=checkbox id=ch8> Make the skater touch 10 different balls
   <p><input type=checkbox id=ch4> Make 5 full rotations with the skate 
   <p><input type=checkbox id=ch7> The skater must only touch lines and the skate must only touch balls
   <p><input type=checkbox id=ch3> Flip the skate upside-down then make the skater stand up on it
   <p><input type=checkbox id=ch9> Make the skater touch 12 different balls
   <p><input type=checkbox id=ch2> Get the skater higher than its starting point
-  <br><p><center><button onclick='challengepage.className="hidden"'>CLOSE</button></center>
+  <br><p><center><button onclick='challengepage.className="hidden";challengevisible=0'>CLOSE</button></center>
 </div>
 
 <div id=challengeok class=hidden>
@@ -646,19 +648,23 @@ challenge8 = localStorage.hiii_8 || 0;
 if(challenge8) ch8.setAttribute("checked", "true");
 challenge9 = localStorage.hiii_9 || 0;
 if(challenge9) ch9.setAttribute("checked", "true");
+challenge10 = localStorage.hiii_10 || 0;
+if(challenge10) ch10.setAttribute("checked", "true");
 challenge7fail = 0;
 skatertouchedaball = 0;
 skatertouchedaline = 0;
 skatetouchedaball = 0;
 skatetouchedaline = 0;
 ballstouched = [];
+delay = 0;
 
 onload = () => {
 
-  setTimeout(()=> {
+  //setTimeout(()=> {
   
 // Render / Game loop
 I = setInterval(()=>{
+  delay+=16;
   c.width ^= 0;
   x.save();
   
@@ -686,8 +692,8 @@ I = setInterval(()=>{
       letter ++;
       y = 0;
     }
-    amt += .1;
-    amt2 += 4;
+    if(delay > 500) amt += .1;
+    if(delay > 500) amt2 += 4;
     x.font = "50px i, impact, calibri, arial";
     x.fillText("PLAY",350,530);
 
@@ -753,6 +759,8 @@ I = setInterval(()=>{
           x.fillStyle = "#F00";
           erasetarget = i;
           lines.splice(erasetarget, 1);
+          timer.innerHTML = "0 items";
+          if(lines.length > 0) timer.innerHTML = lines.length + (lines.length == 1 ? " item" : " items");
           i--;
           rcx = null;
           rcy = null;
@@ -763,7 +771,7 @@ I = setInterval(()=>{
       }
       else if(lines[i].length == 3){
         x.beginPath();
-        x.arc(lines[i][0]+editordx, lines[i][1]+editordy, lines[i][2], 0, 7);
+        if(lines[i][2] > 0) x.arc(lines[i][0]+editordx, lines[i][1]+editordy, lines[i][2], 0, 7);
         if(x.isPointInPath(mousex, mousey) && action == "erase"){
           x.fillStyle = "#F00";
           erasetarget = i;
@@ -772,6 +780,8 @@ I = setInterval(()=>{
           x.fillStyle = "#F00";
           erasetarget = i;
           lines.splice(erasetarget, 1);
+          timer.innerHTML = "0 items";
+          if(lines.length > 0) timer.innerHTML = lines.length + (lines.length == 1 ? " item" : " items");
           i--;
           rcx = null;
           rcy = null;
@@ -795,7 +805,7 @@ I = setInterval(()=>{
       else if(line.length == 3){
         x.beginPath();
         x.fillStyle = "#000";
-        x.arc(line[0]+editordx, line[1]+editordy, line[2], 0, 7);
+        if(line[2] > 0) x.arc(line[0]+editordx, line[1]+editordy, line[2], 0, 7);
         x.fill();
         x.closePath();
       }
@@ -898,7 +908,7 @@ I = setInterval(()=>{
                 skatertouchedaball = 1;
                 if(!ballstouched.includes(j)){
                   ballstouched.push(j);
-                  console.log(ballstouched);
+                  //console.log(ballstouched);
                 }
               }
               
@@ -942,6 +952,12 @@ I = setInterval(()=>{
       
       // Circle
       if(!objects[i].T){
+        if(ballstouched.includes(i)){
+          x.fillStyle = "#00F";
+        }
+        else {
+          x.fillStyle = "#000";
+        }
         x.beginPath();
         x.arc(0, 0, objects[i].B, 0, 7);
         x.lineTo(0, 0);
@@ -1003,7 +1019,7 @@ I = setInterval(()=>{
     
     // Challenge 1
     
-    if(objects.length <= 15 && frame < 13*60 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) > 40){
+    if(objects.length <= 15 && frame < 13*60 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) > 60){
       challenge1 = 0.5;
       //console.log(.5);
     }
@@ -1045,7 +1061,7 @@ I = setInterval(()=>{
       ch4.setAttribute("checked", "true");
       challengeok.className = "";
       challengeok.innerHTML += "<div><b>Challenge cleared: make 5 full rotations with the skate</b>";
-      console.log(1);
+      //console.log(1);
     }
     
     // Challenge 5
@@ -1098,13 +1114,23 @@ I = setInterval(()=>{
       challengeok.innerHTML += "<div><b>Challenge cleared: make the skater touch 12 different balls</b>";
     }
     
+    // Challenge 10
+    
+    if(challenge10 == 0 && objects.length <= 15 && frame < 13*60 && ballstouched.length >= 5){
+      challenge10 = 1;
+      localStorage.hiii_10 = 1;
+      ch10.setAttribute("checked", "true");
+      challengeok.className = "";
+      challengeok.innerHTML += "<div><b>Challenge cleared: make the skater touch 5 different balls</b>";
+    }
+    
     
     timer.innerHTML = (frame/60).toFixed(2);
     //console.log(objects[1].G)
   }
 }, 16)
 
-  },1000);
+  //},1000);
 }
 
 
@@ -1120,6 +1146,8 @@ onclick = (e) => {
   else {
     if(action == "erase" && erasetarget > -1){
       lines.splice(erasetarget, 1);
+      timer.innerHTML = "0 items";
+      if(lines.length > 0) timer.innerHTML = lines.length + (lines.length == 1 ? " item" : " items");
     }
     
     //console.log(e.target.id);
@@ -1174,7 +1202,7 @@ onclick = (e) => {
       load.classList.add("hidden");
       editor.classList.remove("hidden");
       bmusic.classList.remove("hidden");
-      timer.classList.remove("hidden");
+      //timer.classList.remove("hidden");
       clear.classList.add("hidden");
       bghost.classList.add("hidden");
       challenges.classList.add("hidden");
@@ -1207,6 +1235,8 @@ onclick = (e) => {
       //console.log(objects[0].C, objects[0].G, objects[1].C, objects[1].G)
     }
     else if(e.target.id == "editor"){
+      timer.innerHTML = "";
+      if(lines.length > 0) timer.innerHTML = lines.length + (lines.length == 1 ? " item" : " items");
       frame = 0;
       c.style.cursor = "none";
       bghost.classList.remove("hidden");
@@ -1224,7 +1254,7 @@ onclick = (e) => {
       load.classList.remove("hidden");
       editor.classList.add("hidden");
       bmusic.classList.add("hidden");
-      timer.classList.add("hidden");
+      //timer.classList.add("hidden");
       clear.classList.remove("hidden");
       challenges.classList.remove("hidden");
     }
@@ -1236,14 +1266,16 @@ onclick = (e) => {
     else if(e.target.id == "clear"){
       challengevisible = 0;
       challengepage.className = "hidden";
-      if(confirm("Are you sure?")) { lines = []; line = []; ghost = []; editordx = 0; editordy = 0; }
+      if(confirm("Are you sure?")) { lines = []; timer.innerHTML = "";timer.innerHTML = ""; line = []; ghost = []; editordx = 0; editordy = 0; }
     }
     else if(e.target.id == "load"){
       challengevisible = 0;
       challengepage.className = "hidden";
-      if(lines.length == 0 || confirm("This will erase existing data. Are you sure?")) {  code = prompt("Enter creation code here");
+      if(lines.length == 0 || confirm("This will erase existing data. Are you sure?")) { 
+        code = prompt("Enter creation code here");
         if(code.length > 0){
           lines = JSON.parse(code);
+          timer.innerHTML = lines.length + (lines.length == 1 ? " item" : " items");
           line = [];
           ghost = [];
           editordx = 0;
@@ -1259,7 +1291,7 @@ onclick = (e) => {
     
     else if(e.target.id == "bghost"){
       ghostvisible = 1 - ghostvisible;
-      bghost.innerHTML = ghostvisible ? "GHOST VISIBLE" : "GHOST HIDDEN";
+      bghost.innerHTML = ghostvisible ? "GHOST ON" : "GHOST OFF";
       challengevisible = 0;
       challengepage.className = "hidden";
     }
@@ -1326,6 +1358,7 @@ onmouseup = e => {
       //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
       if(line[0] != line[2] || line[1] != line[3]) {
         lines.push(line);
+        timer.innerHTML = lines.length + (lines.length == 1 ? " item" : " items");
       }
       line = [0,0,0,0];
     }
@@ -1338,6 +1371,7 @@ onmouseup = e => {
       //console.log(-Math.atan2(line[3]-line[1], line[2]-line[0]));
       if(line[2] > 1) {
         lines.push(line);
+        timer.innerHTML = lines.length + (lines.length == 1 ? " item" : " items");
       }
       line = [0,0,0];
     }
