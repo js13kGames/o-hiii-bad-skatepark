@@ -33,7 +33,7 @@ button { background: #ddd; border: 2px solid #888; border-radius: 5px; font: bol
 #challengepage button { top: 20px; right: 20px; position: absolute; }
 #challengepage p { margin: 15px 20px 10px; letter-spacing: -.5px; }
 #challengepage input { width: 20px; height: 20px; vertical-align: middle; pointer-events: none; }
-#timer { display: inline-block; width: 90px; font: bold 20px Calibri, Arial; height: 19px; overflow: hidden; }
+#timer { display: inline-block; width: 90px; font: bold 20px Calibri, Arial; height: 19px; overflow: visible; }
 h1 { margin: 0 }
 h3 { margin-top: 10px }
 </style>
@@ -1019,7 +1019,7 @@ I = setInterval(()=>{
     
     // Challenge 1
     
-    if(objects.length <= 15 && frame < 13*60 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) > 60){
+    if(challenge1 == 0 && objects.length <= 15 && frame < 13*60 && distance(Vec2(objects[0].C.x, objects[0].C.y), Vec2(objects[1].C.x, objects[1].C.y)) > 60){
       challenge1 = 0.5;
       //console.log(.5);
     }
